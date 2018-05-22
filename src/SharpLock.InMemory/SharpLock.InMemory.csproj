@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.5</TargetFramework>
+    <PlatformTarget>anycpu</PlatformTarget>
+    <DebugType>portable</DebugType>
+    <AssemblyName>SharpLock.InMemory</AssemblyName>
+    <RootNamespace>SharpLock.InMemory</RootNamespace>
+    <PackageTags>sharplock distributed lock</PackageTags>
+    <PackageProjectUrl>https://github.com/thegreatco/SharpLock.InMemory</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/thegreatco/SharpLock.InMemory</RepositoryUrl>
+    <Authors>TheGreatCO</Authors>
+    <Company>TheGreatCO</Company>
+    <Version Condition=" '$(FILE_VERSION)' == '' ">1.0.0.0</Version>
+    <Version Condition=" '$(FILE_VERSION)' != '' ">$(FILE_VERSION)</Version>
+    <AssemblyVersion Condition=" '$(FILE_VERSION)' == '' ">1.0.0.0</AssemblyVersion>
+    <AssemblyVersion Condition=" '$(FILE_VERSION)' != '' ">$(FILE_VERSION)</AssemblyVersion>
+    <FileVersion Condition=" '$(FILE_VERSION)' == '' ">1.0.0.0</FileVersion>
+    <FileVersion Condition=" '$(FILE_VERSION)' != '' ">$(FILE_VERSION)</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpLock" Version="1.0.21" />
+  </ItemGroup>
+
+</Project>
