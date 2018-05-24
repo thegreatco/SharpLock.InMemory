@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace SharpLock.InMemory
 {
-    public class SharpLockInMemoryDataStore<TBaseObject, TLockableObject> : ISharpLockDataStore<TBaseObject, TLockableObject, string>
-        where TLockableObject : ISharpLockable<string> where TBaseObject : class, ISharpLockableBase<string>
+    public class SharpLockInMemoryStructIdDataStore<TBaseObject, TLockableObject, TId> : ISharpLockDataStore<TBaseObject, TLockableObject, TId>
+        where TLockableObject : ISharpLockable<TId> where TBaseObject : class, ISharpLockableBase<TId> where TId : struct
     {
         private readonly ISharpLockLogger _sharpLockLogger;
         private readonly IEnumerable<TBaseObject> _col;
         private readonly TimeSpan _lockTime;
 
-        public SharpLockInMemoryDataStore(IEnumerable<TBaseObject> rawStore, ISharpLockLogger sharpLockLogger, TimeSpan lockTime)
+        public SharpLockInMemoryStructIdDataStore(IEnumerable<TBaseObject> rawStore, ISharpLockLogger sharpLockLogger, TimeSpan lockTime)
         {
             _col = rawStore;
             _sharpLockLogger = sharpLockLogger;
@@ -24,11 +24,10 @@ namespace SharpLock.InMemory
         public ISharpLockLogger GetLogger() => _sharpLockLogger;
         public TimeSpan GetLockTime() => _lockTime;
 
-        public Task<TBaseObject> AcquireLockAsync(string baseObjId, TLockableObject obj,
+        public Task<TBaseObject> AcquireLockAsync(TId baseObjId, TLockableObject obj,
             Expression<Func<TBaseObject, TLockableObject>> fieldSelector, int staleLockMultiplier,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (baseObjId == null) throw new ArgumentNullException(nameof(baseObjId), "Base Object Id cannot be null");
             if (obj == null) throw new ArgumentNullException(nameof(obj), "Lockable Object cannot be null");
             if (fieldSelector == null)
                 throw new ArgumentNullException(nameof(fieldSelector),
@@ -36,7 +35,7 @@ namespace SharpLock.InMemory
             var lockTime = DateTime.UtcNow.Add(_lockTime);
             var staleLockTime = DateTime.UtcNow.AddMilliseconds(_lockTime.TotalMilliseconds * staleLockMultiplier * -1);
             var compiledSelector = fieldSelector.Compile();
-            var baseObject = _col.FirstOrDefault(x => x.Id == baseObjId && compiledSelector.Invoke(x).Id == obj.Id);
+            var baseObject = _col.FirstOrDefault(x => x.Id.Equals(baseObjId) && compiledSelector.Invoke(x).Id.Equals(obj.Id));
             if (baseObject == null) return Task.FromResult<TBaseObject>(null);
             var lockObject = compiledSelector.Invoke(baseObject);
             if (lockObject == null) return Task.FromResult<TBaseObject>(null);
@@ -52,11 +51,10 @@ namespace SharpLock.InMemory
             }
         }
 
-        public Task<TBaseObject> AcquireLockAsync(string baseObjId, TLockableObject obj,
+        public Task<TBaseObject> AcquireLockAsync(TId baseObjId, TLockableObject obj,
             Expression<Func<TBaseObject, IEnumerable<TLockableObject>>> fieldSelector, int staleLockMultiplier,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (baseObjId == null) throw new ArgumentNullException(nameof(baseObjId), "Base Object Id cannot be null");
             if (obj == null) throw new ArgumentNullException(nameof(obj), "Lockable Object cannot be null");
             if (fieldSelector == null)
                 throw new ArgumentNullException(nameof(fieldSelector),
@@ -65,12 +63,12 @@ namespace SharpLock.InMemory
             var staleLockTime = DateTime.UtcNow.AddMilliseconds(_lockTime.TotalMilliseconds * staleLockMultiplier * -1);
             var compiledSelector = fieldSelector.Compile();
             var baseObject = _col.FirstOrDefault(x =>
-                x.Id == baseObjId && compiledSelector.Invoke(x).FirstOrDefault(y => y.Id == obj.Id) != null);
+                x.Id.Equals(baseObjId) && compiledSelector.Invoke(x).FirstOrDefault(y => y.Id.Equals(obj.Id)) != null);
             
             if (baseObject == null) return Task.FromResult<TBaseObject>(null);
             var lockObjectEnumerable = compiledSelector.Invoke(baseObject);
             if (lockObjectEnumerable == null) return Task.FromResult<TBaseObject>(null);
-            var lockObject = lockObjectEnumerable.FirstOrDefault(x => x.Id == obj.Id);
+            var lockObject = lockObjectEnumerable.FirstOrDefault(x => x.Id.Equals(obj.Id));
             if (lockObject == null) return Task.FromResult<TBaseObject>(null);
 
             lock (lockObject)
@@ -84,7 +82,7 @@ namespace SharpLock.InMemory
             }
         }
 
-        public Task<bool> RefreshLockAsync(string baseObjId, string lockedObjecstring, Guid lockedObjectLockId,
+        public Task<bool> RefreshLockAsync(TId baseObjId, TId lockedObjectId, Guid lockedObjectLockId,
             Expression<Func<TBaseObject, TLockableObject>> fieldSelector,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -93,7 +91,7 @@ namespace SharpLock.InMemory
                     "Field Selector for lockable object cannot be null");
             var lockTime = DateTime.UtcNow.Add(_lockTime);
             var compiledSelector = fieldSelector.Compile();
-            var baseObject = _col.FirstOrDefault(x => x.Id == baseObjId && compiledSelector.Invoke(x).Id == lockedObjecstring);
+            var baseObject = _col.FirstOrDefault(x => x.Id.Equals(baseObjId) && compiledSelector.Invoke(x).Id.Equals(lockedObjectId));
             if (baseObject == null) return Task.FromResult(false);
             var lockObject = compiledSelector.Invoke(baseObject);
             if (lockObject == null) return Task.FromResult(false);
@@ -107,7 +105,7 @@ namespace SharpLock.InMemory
             }
         }
 
-        public Task<bool> RefreshLockAsync(string baseObjId, string lockedObjecstring, Guid lockedObjectLockId,
+        public Task<bool> RefreshLockAsync(TId baseObjId, TId lockedObjectId, Guid lockedObjectLockId,
             Expression<Func<TBaseObject, IEnumerable<TLockableObject>>> fieldSelector,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -117,12 +115,12 @@ namespace SharpLock.InMemory
             var lockTime = DateTime.UtcNow.Add(_lockTime);
             var compiledSelector = fieldSelector.Compile();
             var baseObject = _col.FirstOrDefault(x =>
-                x.Id == baseObjId && compiledSelector.Invoke(x).FirstOrDefault(y => y.Id == lockedObjecstring) != null);
+                x.Id.Equals(baseObjId) && compiledSelector.Invoke(x).FirstOrDefault(y => y.Id.Equals(lockedObjectId)) != null);
 
             if (baseObject == null) return Task.FromResult(false);
             var lockObjectEnumerable = compiledSelector.Invoke(baseObject);
             if (lockObjectEnumerable == null) return Task.FromResult(false);
-            var lockObject = lockObjectEnumerable.FirstOrDefault(x => x.Id == lockedObjecstring);
+            var lockObject = lockObjectEnumerable.FirstOrDefault(x => x.Id.Equals(lockedObjectId));
             if (lockObject == null) return Task.FromResult(false);
 
             lock (lockObject)
@@ -134,7 +132,7 @@ namespace SharpLock.InMemory
             }
         }
 
-        public Task<bool> ReleaseLockAsync(string baseObjId, string lockedObjecstring, Guid lockedObjectLockId,
+        public Task<bool> ReleaseLockAsync(TId baseObjId, TId lockedObjectId, Guid lockedObjectLockId,
             Expression<Func<TBaseObject, TLockableObject>> fieldSelector,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -142,7 +140,7 @@ namespace SharpLock.InMemory
                 throw new ArgumentNullException(nameof(fieldSelector),
                     "Field Selector for lockable object cannot be null");
             var compiledSelector = fieldSelector.Compile();
-            var baseObject = _col.FirstOrDefault(x => x.Id == baseObjId && compiledSelector.Invoke(x).Id == lockedObjecstring);
+            var baseObject = _col.FirstOrDefault(x => x.Id.Equals(baseObjId) && compiledSelector.Invoke(x).Id.Equals(lockedObjectId));
             if (baseObject == null) return Task.FromResult(true);
             var lockObject = compiledSelector.Invoke(baseObject);
             if (lockObject == null) return Task.FromResult(true);
@@ -158,7 +156,7 @@ namespace SharpLock.InMemory
             }
         }
 
-        public Task<bool> ReleaseLockAsync(string baseObjId, string lockedObjecstring, Guid lockedObjectLockId,
+        public Task<bool> ReleaseLockAsync(TId baseObjId, TId lockedObjectId, Guid lockedObjectLockId,
             Expression<Func<TBaseObject, IEnumerable<TLockableObject>>> fieldSelector,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -167,12 +165,12 @@ namespace SharpLock.InMemory
                     "Field Selector for lockable object cannot be null");
             var compiledSelector = fieldSelector.Compile();
             var baseObject = _col.FirstOrDefault(x =>
-                x.Id == baseObjId && compiledSelector.Invoke(x).FirstOrDefault(y => y.Id == lockedObjecstring) != null);
+                x.Id.Equals(baseObjId) && compiledSelector.Invoke(x).FirstOrDefault(y => y.Id.Equals(lockedObjectId)) != null);
 
             if (baseObject == null) return Task.FromResult(true);
             var lockObjectEnumerable = compiledSelector.Invoke(baseObject);
             if (lockObjectEnumerable == null) return Task.FromResult(true);
-            var lockObject = lockObjectEnumerable.FirstOrDefault(x => x.Id == lockedObjecstring);
+            var lockObject = lockObjectEnumerable.FirstOrDefault(x => x.Id.Equals(lockedObjectId));
             if (lockObject == null) return Task.FromResult(true);
 
             lock (lockObject)
@@ -185,7 +183,7 @@ namespace SharpLock.InMemory
             }
         }
 
-        public Task<TBaseObject> GetLockedObjectAsync(string baseObjId, string lockedObjecstring, Guid lockedObjectLockId,
+        public Task<TBaseObject> GetLockedObjectAsync(TId baseObjId, TId lockedObjectId, Guid lockedObjectLockId,
             Expression<Func<TBaseObject, TLockableObject>> fieldSelector,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -193,7 +191,7 @@ namespace SharpLock.InMemory
                 throw new ArgumentNullException(nameof(fieldSelector),
                     "Field Selector for lockable object cannot be null");
             var compiledSelector = fieldSelector.Compile();
-            var baseObject = _col.FirstOrDefault(x => x.Id == baseObjId && compiledSelector.Invoke(x).Id == lockedObjecstring);
+            var baseObject = _col.FirstOrDefault(x => x.Id.Equals(baseObjId) && compiledSelector.Invoke(x).Id.Equals(lockedObjectId));
             if (baseObject == null) return Task.FromResult<TBaseObject>(null);
             var lockObject = compiledSelector.Invoke(baseObject);
             if (lockObject == null) return Task.FromResult<TBaseObject>(null);
@@ -202,7 +200,7 @@ namespace SharpLock.InMemory
             return Task.FromResult<TBaseObject>(null);
         }
 
-        public Task<TBaseObject> GetLockedObjectAsync(string baseObjId, string lockedObjecstring, Guid lockedObjectLockId,
+        public Task<TBaseObject> GetLockedObjectAsync(TId baseObjId, TId lockedObjectId, Guid lockedObjectLockId,
             Expression<Func<TBaseObject, IEnumerable<TLockableObject>>> fieldSelector,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -211,12 +209,12 @@ namespace SharpLock.InMemory
                     "Field Selector for lockable object cannot be null");
             var compiledSelector = fieldSelector.Compile();
             var baseObject = _col.FirstOrDefault(x =>
-                x.Id == baseObjId && compiledSelector.Invoke(x).FirstOrDefault(y => y.Id == lockedObjecstring) != null);
+                x.Id.Equals(baseObjId) && compiledSelector.Invoke(x).FirstOrDefault(y => y.Id.Equals(lockedObjectId)) != null);
 
             if (baseObject == null) return Task.FromResult<TBaseObject>(null);
             var lockObjectEnumerable = compiledSelector.Invoke(baseObject);
             if (lockObjectEnumerable == null) return Task.FromResult<TBaseObject>(null);
-            var lockObject = lockObjectEnumerable.FirstOrDefault(x => x.Id == lockedObjecstring);
+            var lockObject = lockObjectEnumerable.FirstOrDefault(x => x.Id.Equals(lockedObjectId));
             if (lockObject == null) return Task.FromResult<TBaseObject>(null);
             if (lockObject.LockId != lockedObjectLockId)
                 return Task.FromResult<TBaseObject>(null);

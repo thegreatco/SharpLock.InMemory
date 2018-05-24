@@ -15,6 +15,7 @@ namespace SharpLock.InMemory.Tests
         [TestInitialize]
         public async Task Setup()
         {
+            await Task.Yield();
             _sharpLockLogger = new LoggingShim();
 
             _col = new List<LockBase>();
@@ -25,7 +26,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
 
             var locks = Enumerable.Range(0, 100).Select(x => new DistributedLock<LockBase, string>(dataStore)).ToList();
             _sharpLockLogger.Information(locks.Count.ToString());
@@ -53,7 +54,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
 
             var locks = Enumerable.Range(0, 100).Select(x => new DistributedLock<LockBase, InnerLock, string>(dataStore, y => y.SingularInnerLock)).ToList();
             _sharpLockLogger.Information(locks.Count.ToString());
@@ -81,7 +82,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
 
             var locks = Enumerable.Range(0, 100).Select(x => new DistributedLock<LockBase, InnerLock, string>(dataStore, y => y.EnumerableLockables)).ToList();
             _sharpLockLogger.Information(locks.Count.ToString());
@@ -109,7 +110,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
 
             var locks = Enumerable.Range(0, 100).Select(x => new DistributedLock<LockBase, InnerLock, string>(dataStore, y => y.ListOfLockables)).ToList();
             _sharpLockLogger.Information(locks.Count.ToString());
@@ -137,7 +138,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
 
             var locks = Enumerable.Range(0, 100).Select(x => new DistributedLock<LockBase, InnerLock, string>(dataStore, y => y.ArrayOfLockables)).ToList();
             _sharpLockLogger.Information(locks.Count.ToString());

@@ -16,6 +16,7 @@ namespace SharpLock.InMemory.Tests
         [TestInitialize]
         public async Task Setup()
         {
+            await Task.Yield();
             _sharpLockLogger = new LoggingShim();
             _col = new List<LockBase>();
         }
@@ -25,7 +26,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
             
             Assert.IsTrue(await lck.AcquireLockAsync(lockBase) != null, "Failed to acquire lock.");
@@ -47,7 +48,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.SingularInnerLock);
             
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.SingularInnerLock), "Failed to acquire lock.");
@@ -67,7 +68,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.EnumerableLockables);
             
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.EnumerableLockables.First()), "Failed to acquire lock.");
@@ -87,7 +88,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.ListOfLockables);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.ListOfLockables.First()), "Failed to acquire lock.");
@@ -107,7 +108,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.ArrayOfLockables);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.ArrayOfLockables.First()), "Failed to acquire lock.");
@@ -127,7 +128,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore, 2);
 
             // Acquire the lock
@@ -154,7 +155,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.ArrayOfLockables);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.ArrayOfLockables.First()), "Failed to acquire lock.");
@@ -176,7 +177,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.ListOfLockables);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.ListOfLockables.First()), "Failed to acquire lock.");
@@ -198,7 +199,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.EnumerableLockables);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.EnumerableLockables.First()), "Failed to acquire lock.");
@@ -220,7 +221,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
 
             Assert.IsTrue(await lck.AcquireLockAsync(lockBase) != null, "Failed to acquire lock.");
@@ -244,7 +245,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.SingularInnerLock);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.SingularInnerLock), "Failed to acquire lock.");
@@ -266,7 +267,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase), "Failed to acquire lock.");
@@ -288,7 +289,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase), "Failed to acquire lock.");
@@ -312,7 +313,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
 
             Assert.IsTrue(await lck.GetObjectAsync() == null, "await lck.GetObjectAsync() == null");
@@ -338,7 +339,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
 
             Assert.IsTrue(await lck.AcquireLockAsync(lockBase) != null, "await lck.AcquireLockAsync(lockBase, lockBase.SingularInnerLock) != null");
@@ -354,7 +355,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.SingularInnerLock);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.SingularInnerLock), "Failed to acquire lock.");
@@ -376,7 +377,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.SingularInnerLock);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.SingularInnerLock), "Failed to acquire lock.");
@@ -400,7 +401,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.SingularInnerLock);
 
             Assert.IsTrue(await lck.GetObjectAsync() == null, "await lck.GetObjectAsync() == null");
@@ -426,7 +427,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
 
             Assert.IsTrue(await lck.AcquireLockAsync(lockBase) != null, "await lck.AcquireLockAsync(lockBase, lockBase.SingularInnerLock)");
