@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -10,23 +11,28 @@ namespace SharpLock.InMemory
     public class SharpLockInMemoryStringIdDataStore<TBaseObject, TLockableObject> : ISharpLockDataStore<TBaseObject, TLockableObject, string>
         where TLockableObject : ISharpLockable<string> where TBaseObject : class, ISharpLockableBase<string>
     {
-        private readonly ISharpLockLogger _sharpLockLogger;
+        private readonly ILogger _logger;
         private readonly IEnumerable<TBaseObject> _col;
         private readonly TimeSpan _lockTime;
 
-        public SharpLockInMemoryStringIdDataStore(IEnumerable<TBaseObject> rawStore, ISharpLockLogger sharpLockLogger, TimeSpan lockTime)
+        public SharpLockInMemoryStringIdDataStore(IEnumerable<TBaseObject> rawStore, ILogger logger, TimeSpan lockTime)
         {
             _col = rawStore;
-            _sharpLockLogger = sharpLockLogger;
+            _logger = logger;
             _lockTime = lockTime;
         }
 
-        public ISharpLockLogger GetLogger() => _sharpLockLogger;
+        public SharpLockInMemoryStringIdDataStore(IEnumerable<TBaseObject> rawStore, ILoggerFactory loggerFactory, TimeSpan lockTime)
+            : this(rawStore, loggerFactory.CreateLogger<SharpLockInMemoryStringIdDataStore<TBaseObject, TLockableObject>>(), lockTime)
+        {
+        }
+
+        public ILogger GetLogger() => _logger;
         public TimeSpan GetLockTime() => _lockTime;
 
         public Task<TBaseObject> AcquireLockAsync(string baseObjId, TLockableObject obj,
             Expression<Func<TBaseObject, TLockableObject>> fieldSelector, int staleLockMultiplier,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (obj == null) throw new ArgumentNullException(nameof(obj), "Lockable Object cannot be null");
             if (fieldSelector == null)
@@ -53,7 +59,7 @@ namespace SharpLock.InMemory
 
         public Task<TBaseObject> AcquireLockAsync(string baseObjId, TLockableObject obj,
             Expression<Func<TBaseObject, IEnumerable<TLockableObject>>> fieldSelector, int staleLockMultiplier,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (obj == null) throw new ArgumentNullException(nameof(obj), "Lockable Object cannot be null");
             if (fieldSelector == null)
@@ -84,7 +90,7 @@ namespace SharpLock.InMemory
 
         public Task<bool> RefreshLockAsync(string baseObjId, string lockedObjectId, Guid lockedObjectLockId,
             Expression<Func<TBaseObject, TLockableObject>> fieldSelector,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (fieldSelector == null)
                 throw new ArgumentNullException(nameof(fieldSelector),
@@ -107,7 +113,7 @@ namespace SharpLock.InMemory
 
         public Task<bool> RefreshLockAsync(string baseObjId, string lockedObjectId, Guid lockedObjectLockId,
             Expression<Func<TBaseObject, IEnumerable<TLockableObject>>> fieldSelector,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (fieldSelector == null)
                 throw new ArgumentNullException(nameof(fieldSelector),
@@ -134,7 +140,7 @@ namespace SharpLock.InMemory
 
         public Task<bool> ReleaseLockAsync(string baseObjId, string lockedObjectId, Guid lockedObjectLockId,
             Expression<Func<TBaseObject, TLockableObject>> fieldSelector,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (fieldSelector == null)
                 throw new ArgumentNullException(nameof(fieldSelector),
@@ -158,7 +164,7 @@ namespace SharpLock.InMemory
 
         public Task<bool> ReleaseLockAsync(string baseObjId, string lockedObjectId, Guid lockedObjectLockId,
             Expression<Func<TBaseObject, IEnumerable<TLockableObject>>> fieldSelector,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (fieldSelector == null)
                 throw new ArgumentNullException(nameof(fieldSelector),
@@ -185,7 +191,7 @@ namespace SharpLock.InMemory
 
         public Task<TBaseObject> GetLockedObjectAsync(string baseObjId, string lockedObjectId, Guid lockedObjectLockId,
             Expression<Func<TBaseObject, TLockableObject>> fieldSelector,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (fieldSelector == null)
                 throw new ArgumentNullException(nameof(fieldSelector),
@@ -202,7 +208,7 @@ namespace SharpLock.InMemory
 
         public Task<TBaseObject> GetLockedObjectAsync(string baseObjId, string lockedObjectId, Guid lockedObjectLockId,
             Expression<Func<TBaseObject, IEnumerable<TLockableObject>>> fieldSelector,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (fieldSelector == null)
                 throw new ArgumentNullException(nameof(fieldSelector),

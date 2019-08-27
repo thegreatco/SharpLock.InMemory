@@ -2,22 +2,33 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Serilog;
+using Serilog.AspNetCore;
+using Serilog.Events;
 using SharpLock.Exceptions;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace SharpLock.InMemory.Tests
 {
     [TestClass]
     public class LockAcquireTests
     {
-        private ISharpLockLogger _sharpLockLogger;
+        private ILogger _logger;
         private IList<LockBase> _col;
 
         [TestInitialize]
         public async Task Setup()
         {
             await Task.Yield();
-            _sharpLockLogger = new LoggingShim();
+            var loggerConfig = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
+                .WriteTo.LiterateConsole(LogEventLevel.Verbose);
+            var logger = loggerConfig.CreateLogger();
+            ILoggerFactory factory = new SerilogLoggerFactory(logger);
+            _logger = factory.CreateLogger(GetType());
+
             _col = new List<LockBase>();
         }
 
@@ -26,7 +37,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
             
             Assert.IsTrue(await lck.AcquireLockAsync(lockBase) != null, "Failed to acquire lock.");
@@ -39,7 +50,7 @@ namespace SharpLock.InMemory.Tests
             
             Assert.IsTrue(await lck.ReleaseLockAsync(), "Failed to release lock.");
             
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -48,7 +59,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.SingularInnerLock);
             
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.SingularInnerLock), "Failed to acquire lock.");
@@ -59,7 +70,7 @@ namespace SharpLock.InMemory.Tests
             
             Assert.IsTrue(await lck.ReleaseLockAsync(), "Failed to release lock.");
             
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -68,7 +79,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.EnumerableLockables);
             
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.EnumerableLockables.First()), "Failed to acquire lock.");
@@ -79,7 +90,7 @@ namespace SharpLock.InMemory.Tests
             
             Assert.IsTrue(await lck.ReleaseLockAsync(), "Failed to release lock.");
             
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -88,7 +99,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.ListOfLockables);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.ListOfLockables.First()), "Failed to acquire lock.");
@@ -99,7 +110,7 @@ namespace SharpLock.InMemory.Tests
             
             Assert.IsTrue(await lck.ReleaseLockAsync(), "Failed to release lock.");
             
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -108,7 +119,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.ArrayOfLockables);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.ArrayOfLockables.First()), "Failed to acquire lock.");
@@ -119,7 +130,7 @@ namespace SharpLock.InMemory.Tests
             
             Assert.IsTrue(await lck.ReleaseLockAsync(), "Failed to release lock.");
             
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -128,7 +139,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore, 2);
 
             // Acquire the lock
@@ -146,7 +157,7 @@ namespace SharpLock.InMemory.Tests
             Assert.IsTrue(await lck.RefreshLockAsync(), "Failed to refresh lock.");
             Assert.IsTrue(await lck.ReleaseLockAsync(), "Failed to release lock.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -155,7 +166,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.ArrayOfLockables);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.ArrayOfLockables.First()), "Failed to acquire lock.");
@@ -168,7 +179,7 @@ namespace SharpLock.InMemory.Tests
 
             Assert.IsTrue(await lck.ReleaseLockAsync(), "Failed to release lock.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -177,7 +188,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.ListOfLockables);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.ListOfLockables.First()), "Failed to acquire lock.");
@@ -190,7 +201,7 @@ namespace SharpLock.InMemory.Tests
 
             Assert.IsTrue(await lck.ReleaseLockAsync(), "Failed to release lock.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -199,7 +210,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.EnumerableLockables);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.EnumerableLockables.First()), "Failed to acquire lock.");
@@ -212,7 +223,7 @@ namespace SharpLock.InMemory.Tests
 
             Assert.IsTrue(await lck.ReleaseLockAsync(), "Failed to release lock.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -221,7 +232,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
 
             Assert.IsTrue(await lck.AcquireLockAsync(lockBase) != null, "Failed to acquire lock.");
@@ -236,7 +247,7 @@ namespace SharpLock.InMemory.Tests
 
             Assert.IsTrue(await lck.ReleaseLockAsync(), "Failed to release lock.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -245,7 +256,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.SingularInnerLock);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.SingularInnerLock), "Failed to acquire lock.");
@@ -258,7 +269,7 @@ namespace SharpLock.InMemory.Tests
 
             Assert.IsTrue(await lck.ReleaseLockAsync(), "Failed to release lock.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -267,7 +278,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase), "Failed to acquire lock.");
@@ -280,7 +291,7 @@ namespace SharpLock.InMemory.Tests
 
             Assert.AreEqual(lck.ToString(), "No lock acquired.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -289,7 +300,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase), "Failed to acquire lock.");
@@ -304,7 +315,7 @@ namespace SharpLock.InMemory.Tests
 
             Assert.AreEqual(lck.ToString(), "No lock acquired.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -313,7 +324,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
 
             Assert.IsTrue(await lck.GetObjectAsync() == null, "await lck.GetObjectAsync() == null");
@@ -330,7 +341,7 @@ namespace SharpLock.InMemory.Tests
 
             Assert.AreEqual(lck.ToString(), "No lock acquired.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -339,14 +350,14 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
 
             Assert.IsTrue(await lck.AcquireLockAsync(lockBase) != null, "await lck.AcquireLockAsync(lockBase, lockBase.SingularInnerLock) != null");
 
             Assert.IsTrue(lck.LockAcquired, "Lock should be acquired but it doesn't appear to be.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -355,7 +366,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.SingularInnerLock);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.SingularInnerLock), "Failed to acquire lock.");
@@ -368,7 +379,7 @@ namespace SharpLock.InMemory.Tests
 
             Assert.AreEqual(lck.ToString(), "No lock acquired.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -377,7 +388,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.SingularInnerLock);
 
             Assert.IsNotNull(await lck.AcquireLockAsync(lockBase, lockBase.SingularInnerLock), "Failed to acquire lock.");
@@ -392,7 +403,7 @@ namespace SharpLock.InMemory.Tests
 
             Assert.AreEqual(lck.ToString(), "No lock acquired.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -401,7 +412,7 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, InnerLock, string>(dataStore, x => x.SingularInnerLock);
 
             Assert.IsTrue(await lck.GetObjectAsync() == null, "await lck.GetObjectAsync() == null");
@@ -418,7 +429,7 @@ namespace SharpLock.InMemory.Tests
 
             Assert.AreEqual(lck.ToString(), "No lock acquired.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
 
@@ -427,14 +438,14 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _logger, TimeSpan.FromSeconds(30));
             var lck = new DistributedLock<LockBase, string>(dataStore);
 
             Assert.IsTrue(await lck.AcquireLockAsync(lockBase) != null, "await lck.AcquireLockAsync(lockBase, lockBase.SingularInnerLock)");
 
             Assert.IsTrue(lck.LockAcquired, "Lock should be acquired but it doesn't appear to be.");
 
-            lck.Dispose();
+            await lck.DisposeAsync().ConfigureAwait(false);
             Assert.IsTrue(lck.Disposed, "Failed to mark object as disposed");
         }
     }

@@ -2,21 +2,31 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Serilog;
+using Serilog.AspNetCore;
+using Serilog.Events;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace SharpLock.InMemory.Tests
 {
     [TestClass]
     public class RaceConditionTests
     {
-        private ISharpLockLogger _sharpLockLogger;
+        private ILogger _logger;
         private IList<LockBase> _col;
 
         [TestInitialize]
         public async Task Setup()
         {
             await Task.Yield();
-            _sharpLockLogger = new LoggingShim();
+            var loggerConfig = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
+                .WriteTo.LiterateConsole(LogEventLevel.Verbose);
+            var logger = loggerConfig.CreateLogger();
+            ILoggerFactory factory = new SerilogLoggerFactory(logger);
+            _logger = factory.CreateLogger(GetType());
 
             _col = new List<LockBase>();
         }
@@ -26,10 +36,10 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase>(_col, _logger, TimeSpan.FromSeconds(30));
 
             var locks = Enumerable.Range(0, 100).Select(x => new DistributedLock<LockBase, string>(dataStore)).ToList();
-            _sharpLockLogger.Information(locks.Count.ToString());
+            _logger.LogInformation(locks.Count.ToString());
             var lockedObjects = await Task.WhenAll(locks.Select(x => x.AcquireLockAsync(lockBase, TimeSpan.FromSeconds(1))));
             
             Assert.IsFalse(lockedObjects.Count(x => x != null) < 1, "Failed to acquire lock.");
@@ -45,7 +55,7 @@ namespace SharpLock.InMemory.Tests
             Assert.IsTrue(lockStates.Count(x => x) == locks.Count, "Failed to release lock.");
             Assert.IsTrue(locks.Count(x => x.LockAcquired) == 0, "Failed to release lock.");
             
-            locks.ForEach(x => x.Dispose());
+            await Task.WhenAll(locks.Select(async x => await x.DisposeAsync().ConfigureAwait(false)));
             Assert.IsTrue(locks.Count(x => x.Disposed) == locks.Count, "Failed to mark object as disposed");
         }
 
@@ -54,10 +64,10 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
 
             var locks = Enumerable.Range(0, 100).Select(x => new DistributedLock<LockBase, InnerLock, string>(dataStore, y => y.SingularInnerLock)).ToList();
-            _sharpLockLogger.Information(locks.Count.ToString());
+            _logger.LogInformation(locks.Count.ToString());
             var lockedObjects = await Task.WhenAll(locks.Select(x => x.AcquireLockAsync(lockBase, lockBase.SingularInnerLock, TimeSpan.FromSeconds(1))));
 
             Assert.IsFalse(lockedObjects.Count(x => x != null) < 1, "Failed to acquire lock.");
@@ -73,7 +83,7 @@ namespace SharpLock.InMemory.Tests
             Assert.IsTrue(lockStates.Count(x => x) == locks.Count, "Failed to release lock.");
             Assert.IsTrue(locks.Count(x => x.LockAcquired) == 0, "Failed to release lock.");
 
-            locks.ForEach(x => x.Dispose());
+            await Task.WhenAll(locks.Select(async x => await x.DisposeAsync().ConfigureAwait(false)));
             Assert.IsTrue(locks.Count(x => x.Disposed) == locks.Count, "Failed to mark object as disposed");
         }
 
@@ -82,10 +92,10 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
 
             var locks = Enumerable.Range(0, 100).Select(x => new DistributedLock<LockBase, InnerLock, string>(dataStore, y => y.EnumerableLockables)).ToList();
-            _sharpLockLogger.Information(locks.Count.ToString());
+            _logger.LogInformation(locks.Count.ToString());
             var lockedObjects = await Task.WhenAll(locks.Select(x => x.AcquireLockAsync(lockBase, lockBase.EnumerableLockables.First(), TimeSpan.FromSeconds(1))));
 
             Assert.IsFalse(lockedObjects.Count(x => x != null) < 1, "Failed to acquire lock.");
@@ -101,7 +111,7 @@ namespace SharpLock.InMemory.Tests
             Assert.IsTrue(lockStates.Count(x => x) == locks.Count, "Failed to release lock.");
             Assert.IsTrue(locks.Count(x => x.LockAcquired) == 0, "Failed to release lock.");
 
-            locks.ForEach(x => x.Dispose());
+            await Task.WhenAll(locks.Select(async x => await x.DisposeAsync().ConfigureAwait(false)));
             Assert.IsTrue(locks.Count(x => x.Disposed) == locks.Count, "Failed to mark object as disposed");
         }
 
@@ -110,10 +120,10 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
 
             var locks = Enumerable.Range(0, 100).Select(x => new DistributedLock<LockBase, InnerLock, string>(dataStore, y => y.ListOfLockables)).ToList();
-            _sharpLockLogger.Information(locks.Count.ToString());
+            _logger.LogInformation(locks.Count.ToString());
             var lockedObjects = await Task.WhenAll(locks.Select(x => x.AcquireLockAsync(lockBase, lockBase.ListOfLockables[0], TimeSpan.FromSeconds(1))));
 
             Assert.IsFalse(lockedObjects.Count(x => x != null) < 1, "Failed to acquire lock.");
@@ -129,7 +139,7 @@ namespace SharpLock.InMemory.Tests
             Assert.IsTrue(lockStates.Count(x => x) == locks.Count, "Failed to release lock.");
             Assert.IsTrue(locks.Count(x => x.LockAcquired) == 0, "Failed to release lock.");
 
-            locks.ForEach(x => x.Dispose());
+            await Task.WhenAll(locks.Select(async x => await x.DisposeAsync().ConfigureAwait(false)));
             Assert.IsTrue(locks.Count(x => x.Disposed) == locks.Count, "Failed to mark object as disposed");
         }
 
@@ -138,10 +148,10 @@ namespace SharpLock.InMemory.Tests
         {
             var lockBase = new LockBase();
             _col.Add(lockBase);
-            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _sharpLockLogger, TimeSpan.FromSeconds(30));
+            var dataStore = new SharpLockInMemoryStringIdDataStore<LockBase, InnerLock>(_col, _logger, TimeSpan.FromSeconds(30));
 
             var locks = Enumerable.Range(0, 100).Select(x => new DistributedLock<LockBase, InnerLock, string>(dataStore, y => y.ArrayOfLockables)).ToList();
-            _sharpLockLogger.Information(locks.Count.ToString());
+            _logger.LogInformation(locks.Count.ToString());
             var lockedObjects = await Task.WhenAll(locks.Select(x => x.AcquireLockAsync(lockBase, lockBase.ArrayOfLockables[1], TimeSpan.FromSeconds(1))));
 
             Assert.IsFalse(lockedObjects.Count(x => x != null) < 1, "Failed to acquire lock.");
@@ -157,7 +167,7 @@ namespace SharpLock.InMemory.Tests
             Assert.IsTrue(lockStates.Count(x => x) == locks.Count, "Failed to release lock.");
             Assert.IsTrue(locks.Count(x => x.LockAcquired) == 0, "Failed to release lock.");
 
-            locks.ForEach(x => x.Dispose());
+            await Task.WhenAll(locks.Select(async x => await x.DisposeAsync().ConfigureAwait(false)));
             Assert.IsTrue(locks.Count(x => x.Disposed) == locks.Count, "Failed to mark object as disposed");
         }
     }
